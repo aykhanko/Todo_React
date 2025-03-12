@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User, CheckSquare } from "lucide-react";
+import { useAuthContext } from "@/context/AuthContext";
 
 interface NavbarProps {
   isAuthenticated?: boolean;
@@ -16,10 +17,21 @@ interface NavbarProps {
 }
 
 const Navbar = ({
-  isAuthenticated = false,
-  username = "User",
-  onLogout = () => console.log("Logout clicked"),
+  isAuthenticated: propIsAuthenticated,
+  username: propUsername,
+  onLogout: propOnLogout,
 }: NavbarProps) => {
+  // Use context values if available, otherwise fall back to props
+  const authContext = useAuthContext();
+
+  const isAuthenticated =
+    authContext?.isAuthenticated ?? propIsAuthenticated ?? false;
+  const username = authContext?.user?.username ?? propUsername ?? "User";
+  const onLogout =
+    authContext?.logout ??
+    propOnLogout ??
+    (() => console.log("Logout clicked"));
+
   return (
     <nav className="w-full h-16 px-4 md:px-6 bg-white border-b shadow-sm flex items-center justify-between">
       <div className="flex items-center space-x-2">

@@ -4,6 +4,7 @@ import Navbar from "./layout/Navbar";
 import AuthContainer from "./auth/AuthContainer";
 import TodoDashboard from "./todo/TodoDashboard";
 import UserProfile from "./profile/UserProfile";
+import { useAuthContext } from "@/context/AuthContext";
 
 interface User {
   id: string;
@@ -24,139 +25,70 @@ interface Todo {
 }
 
 const Home: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [authError, setAuthError] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const {
+    isAuthenticated,
+    user,
+    error: authError,
+    isLoading,
+    login,
+    register,
+    logout,
+    resetPassword,
+  } = useAuthContext();
   const [activeView, setActiveView] = useState<"dashboard" | "profile">(
     "dashboard",
   );
 
   const navigate = useNavigate();
 
-  // Simulated authentication check on component mount
-  useEffect(() => {
-    // Check for token in localStorage (in a real app)
-    const token = localStorage.getItem("authToken");
-    if (token) {
-      // In a real app, you would validate the token with your backend
-      setIsAuthenticated(true);
-      // Mock user data
-      setUser({
-        id: "1",
-        username: "johndoe",
-        email: "john.doe@example.com",
-        name: "John Doe",
-        bio: "Frontend developer passionate about creating intuitive user experiences.",
-      });
-    }
-  }, []);
-
   // Handle login
-  const handleLogin = (values: {
+  const handleLogin = async (values: {
     email: string;
     password: string;
     rememberMe?: boolean;
   }) => {
-    setIsLoading(true);
-    setAuthError("");
-
-    // Simulate API call
-    setTimeout(() => {
-      // Mock successful login
-      if (
-        values.email === "demo@example.com" &&
-        values.password === "password"
-      ) {
-        const mockUser = {
-          id: "1",
-          username: "demouser",
-          email: values.email,
-          name: "Demo User",
-        };
-
-        // Store token in localStorage
-        localStorage.setItem("authToken", "mock-jwt-token");
-
-        setUser(mockUser);
-        setIsAuthenticated(true);
-        setIsLoading(false);
-      } else {
-        // Mock login failure
-        setAuthError("Invalid email or password");
-        setIsLoading(false);
-      }
-    }, 1000);
+    try {
+      await login(values.email, values.password);
+      // Redirect to todos page after successful login
+      navigate("/todos");
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
   };
 
   // Handle registration
-  const handleRegister = (values: {
+  const handleRegister = async (values: {
     username: string;
     email: string;
     password: string;
   }) => {
-    setIsLoading(true);
-    setAuthError("");
-
-    // Simulate API call
-    setTimeout(() => {
-      // Mock successful registration
-      const mockUser = {
-        id: "1",
-        username: values.username,
-        email: values.email,
-        name: values.username,
-      };
-
-      // Store token in localStorage
-      localStorage.setItem("authToken", "mock-jwt-token");
-
-      setUser(mockUser);
-      setIsAuthenticated(true);
-      setIsLoading(false);
-    }, 1000);
+    try {
+      await register(values.username, values.email, values.password);
+      // After registration, we need to log in
+      await login(values.email, values.password);
+      navigate("/todos");
+    } catch (error) {
+      console.error("Registration failed:", error);
+    }
   };
 
   // Handle password reset
-  const handlePasswordReset = (values: { email: string }) => {
-    setIsLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      // Just simulate the process completing
-      setIsLoading(false);
-    }, 1000);
-  };
-
-  // Handle logout
-  const handleLogout = () => {
-    // Remove token from localStorage
-    localStorage.removeItem("authToken");
-
-    setUser(null);
-    setIsAuthenticated(false);
-    setActiveView("dashboard");
+  const handlePasswordReset = async (values: { email: string }) => {
+    try {
+      await resetPassword(values.email);
+    } catch (error) {
+      console.error("Password reset failed:", error);
+    }
   };
 
   // Handle profile update
-  const handleProfileUpdate = (values: any) => {
-    setIsLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      // Update user data
-      setUser((prev) => (prev ? { ...prev, ...values } : null));
-      setIsLoading(false);
-    }, 1000);
+  const handleProfileUpdate = async (values: any) => {
+    // This is now handled in the UserProfile component directly
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Navbar
-        isAuthenticated={isAuthenticated}
-        username={user?.username}
-        onLogout={handleLogout}
-      />
+      <Navbar />
 
       <main className="flex-1 container mx-auto px-4 py-8">
         {!isAuthenticated ? (
@@ -166,20 +98,13 @@ const Home: React.FC = () => {
               onRegister={handleRegister}
               onPasswordReset={handlePasswordReset}
               isLoading={isLoading}
-              error={authError}
+              error={authError || ""}
             />
           </div>
         ) : (
           <div className="w-full">
-            {activeView === "dashboard" ? (
-              <TodoDashboard username={user?.name} />
-            ) : (
-              <UserProfile
-                user={user || undefined}
-                onSave={handleProfileUpdate}
-                isLoading={isLoading}
-              />
-            )}
+            {/* Redirect to the appropriate route instead of conditionally rendering */}
+            {navigate("/todos")}
           </div>
         )}
       </main>
